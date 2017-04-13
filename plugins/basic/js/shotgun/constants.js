@@ -16,11 +16,11 @@ var sg_constants = sg_constants || {};
 sg_constants.extension_info = {
 
     manager: {
-        id: "com.sg.basic.ps.manager"
+        id: "com.sg.basic.an.manager"
     },
 
     panel: {
-        id: "com.sg.basic.ps.panel"
+        id: "com.sg.basic.an.panel"
     }
 };
 
@@ -30,21 +30,14 @@ sg_constants.product_info = {
 
     // ---- key'd on app id which is what we have access to in the extensions
 
-    // tk_engine_name: translates the app id (like "PHSP") to the expected
-    // engine block name (like "tk-photoshop") in a tk configuration.
+    // tk_engine_name: translates the app id (like "FLPR") to the expected
+    // engine block name (like "tk-animatecc") in a tk configuration.
 
-    // Photoshop
-    PHSP: {
-        display_name: "Photoshop",
-        tk_engine_name: "tk-photoshop",
-        debug_url: "http://localhost:45216"
-    },
-
-    // Photoshop alt
-    PHXS: {
-        display_name: "Photoshop",
-        tk_engine_name: "tk-photoshop",
-        debug_url: "http://localhost:45217"
+    // Animate
+    FLPR: {
+        display_name: "Animate",
+        tk_engine_name: "tk-animatecc",
+        debug_url: "http://localhost:34900"
     }
 
     // NOTE: the debug ports are defined in .debug file at the top level of the

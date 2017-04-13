@@ -31,7 +31,7 @@ CORE_BUILD_SCRIPT = os.path.join("developer", "build_plugin.py")
 
 # timestamp url for signing the extension.
 # see: http://www.davidebarranca.com/2014/05/html-panels-tips-10-packaging-zxp-installers/
-TIMESTAMP_URL = "https://timestamp.geotrust.com/tsa"
+TIMESTAMP_URL = "http://timestamp.comodoca.com/"
 
 
 def main():
@@ -152,7 +152,7 @@ def _parse_args():
     parser.add_argument(
         "--extension_name", "-e",
         metavar="name",
-        help="The name of the output extension. Ex: 'com.sg.basic.ps'",
+        help="The name of the output extension. Ex: 'com.sg.basic.an'",
         required=True,
     )
 

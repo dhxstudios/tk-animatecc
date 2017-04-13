@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ExtensionList>
-    <Extension Id="com.sg.basic.ps.panel">
+    <Extension Id="com.sg.basic.an.panel">
         <HostList>
-           <Host Name="PHSP" Port="45216"/>
-           <Host Name="PHXS" Port="45217"/>
+           <Host Name="FLPR" Port="34900"/>
         </HostList>
     </Extension>
 </ExtensionList>

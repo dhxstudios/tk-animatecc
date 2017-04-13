@@ -177,8 +177,11 @@ sg_manager.Manager = new function() {
 
         // supported if the panel menu and html extensions are available
         const host_capabilities = _cs_interface.getHostCapabilities();
-        return host_capabilities.EXTENDED_PANEL_MENU &&
-            host_capabilities.SUPPORT_HTML_EXTENSIONS;
+
+        // TODO: Fix this hack
+        return true;
+        /*return host_capabilities.EXTENDED_PANEL_MENU &&
+            host_capabilities.SUPPORT_HTML_EXTENSIONS;*/
     };
 
     const _active_document_check = function() {
@@ -187,11 +190,11 @@ sg_manager.Manager = new function() {
             // products. If it isn't, then we'll likely want to make
             // a manager method that abstracts it away and returns
             // the active document after checking which DCC we're in.
-            "app.activeDocument.fullName.fsName",
+            "(fl.getDocumentDOM() ? fl.getDocumentDOM().pathURI : undefined)",
             function(result) {
                 // If the above command fails, then it's because the
                 // active document is an unsaved file.
-                if ( result == "EvalScript error." ) {
+                if ( result == "EvalScript error." || result == "undefined" ) {
                     // If we previously had a path stored and we're in
                     // this undefined state, then we've switched from a
                     // saved document to one that isn't and we still
@@ -515,7 +518,7 @@ sg_manager.Manager = new function() {
         // Handle requests for test running.
         sg_panel.RUN_TESTS.connect(
             function(event) {
-                sg_logging.debug("Requesting that tk_photoshopcc run tests...");
+                sg_logging.debug("Requesting that tk_animatecc run tests...");
                 sg_socket_io.rpc_run_tests();
             }
         );

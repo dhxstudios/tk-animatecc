@@ -88,6 +88,10 @@ sg_socket_io.SocketManager = new function() {
 
     var io = undefined;
 
+    var jsflify_path = function(file_path) {
+        return 'file:///' + sanitize_path(file_path.replace(':', '|'));
+    };
+
     /*
     Emits a debug logging message only if network logging has been
     turned on via the environment.
@@ -95,10 +99,9 @@ sg_socket_io.SocketManager = new function() {
     :param msg: The logging message.
     */
     var log_network_debug = function(msg) {
-        const legacy_env = process.env.SGTK_PHOTOSHOP_NETWORK_DEBUG;
         const env_var = process.env.SHOTGUN_ADOBE_NETWORK_DEBUG;
 
-        if ( legacy_env || env_var ) {
+        if ( env_var ) {
             sg_logging.debug(msg);
         }
     };
@@ -149,13 +152,19 @@ sg_socket_io.SocketManager = new function() {
         // Get the path to the extension.
         var ext_dir = csLib.getSystemPath(SystemPath.APPLICATION);
         var js_dir = path.join(ext_dir, "js", "shotgun");
+        var dhx_js_dir = path.join(ext_dir, "js", "dhx");
+        var rpc_path = jsflify_path(path.join(dhx_js_dir, "rpc.jsfl"));
+        const cmd = "fl.runScript('" + rpc_path + "')";
+        log_network_debug(cmd);
+        csLib.evalScript(cmd);
 
+        // TODO: THIS SECTION IS FUCKED. NUKE IT FROM ORBIT.
         // Tell ExtendScript to load the rpc.js file that contains our
         // helper functions.
-        var jsx_rpc_path = sanitize_path(path.join(js_dir, "ECMA", "rpc.js"));
+        /*var jsx_rpc_path = sanitize_path(path.join(js_dir, "ECMA", "rpc.js"));
         var cmd = '$.evalFile("' + jsx_rpc_path + '")';
         sg_logging.debug("Sourcing rpc.js: " + cmd);
-        csLib.evalScript(cmd);
+        csLib.evalScript(cmd);*/
 
         sg_logging.info("Establishing jrpc interface.");
 
@@ -214,12 +223,7 @@ sg_socket_io.SocketManager = new function() {
                 var class_name = JSON.stringify(params.shift());
                 var cmd = "rpc_new(" + class_name + ")";
                 log_network_debug(cmd);
-
-                csLib.evalScript(
-                    cmd,
-                    _eval_callback.bind(this, next)
-                );
-            };
+                csLib.evalScript(cmd, _eval_callback.bind(this, next));            };
 
             /*
             Gets the value of the given property on the given object.
@@ -236,11 +240,7 @@ sg_socket_io.SocketManager = new function() {
                 var args = [base.__uniqueid, JSON.stringify(property)].join();
                 var cmd = "rpc_get(" + args + ")";
                 log_network_debug(cmd);
-
-                csLib.evalScript(
-                    cmd,
-                    _eval_callback.bind(this, next)
-                );
+                csLib.evalScript(cmd, _eval_callback.bind(this, next));
             };
 
             /*
@@ -259,11 +259,7 @@ sg_socket_io.SocketManager = new function() {
                 var args = [base.__uniqueid, index].join();
                 var cmd = "rpc_get_index(" + args + ")";
                 log_network_debug(cmd);
-
-                csLib.evalScript(
-                    cmd,
-                    _eval_callback.bind(this, next)
-                );
+                csLib.evalScript(cmd, _eval_callback.bind(this, next));
             };
 
             /*
@@ -287,11 +283,7 @@ sg_socket_io.SocketManager = new function() {
 
                 var cmd = "rpc_set(" + args + ")";
                 log_network_debug(cmd);
-
-                csLib.evalScript(
-                    cmd,
-                    _eval_callback.bind(this, next)
-                );
+                csLib.evalScript(cmd, _eval_callback.bind(this, next));
             };
 
             /*
@@ -324,11 +316,7 @@ sg_socket_io.SocketManager = new function() {
 
                 var cmd = "rpc_call(" + args + ")";
                 log_network_debug(cmd);
-
-                csLib.evalScript(
-                    cmd,
-                    _eval_callback.bind(this, next)
-                );
+                csLib.evalScript(cmd, _eval_callback.bind(this, next));
             };
 
         }
@@ -359,6 +347,7 @@ sg_socket_io.SocketManager = new function() {
             sg_logging.info("Connection received!");
 
             socket.on("execute_command", function(message) {
+                sg_logging.debug("Executing command: " + message);
                 remote.receive(message);
             });
 

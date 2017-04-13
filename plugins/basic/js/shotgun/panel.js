@@ -183,7 +183,7 @@ sg_panel.Panel = new function() {
     // Open an email in default email client.
     this.email_support = function(subject, body) {
 
-        const mailto_url = `mailto:support@shotgunsoftware.com?subject=${subject}&body=${body}`;
+        const mailto_url = `mailto:pipeline.2d@dhxmedia.com?subject=${subject}&body=${body}`;
 
         sg_logging.debug("Emailing support: " + mailto_url);
 
@@ -214,15 +214,6 @@ sg_panel.Panel = new function() {
 
             // setup event listeners first so we can react to various events
             _setup_event_listeners();
-
-            // If the current Adobe application is photoshop, turn on persistence.
-            // This isn't required, but provides a better user experience by not
-            // trying to reload the panel whenever it regains focus.
-            const photoshop_ids = ["PHSP", "PHXS"];
-            if (photoshop_ids.indexOf(_cs_interface.getApplicationID()) > -1) {
-                sg_logging.debug("Making panel persistent.");
-                _make_persistent(true);
-            }
 
             // track the mouse
             document.onmousemove = _on_mouse_move;
@@ -263,15 +254,13 @@ sg_panel.Panel = new function() {
 
         sg_logging.debug("Closing the panel.");
 
-        // turn off persistence so we can close the panel
-        _make_persistent(false);
-
         // close the panel
         this.on_unload();
 
         // request manager reload and close the panel
         sg_panel.REQUEST_MANAGER_RELOAD.emit();
         _cs_interface.closeExtension();
+        this.on_load();
     };
 
     // Copy selection to the clipboard
@@ -521,6 +510,11 @@ sg_panel.Panel = new function() {
             }
         });
 
+        flyout_xml += '<MenuItem Id="sg_dev_reload" \
+                          Label="Reload Shotgun Extension" \
+                          Enabled="true" \
+                          Checked="false"/>';
+
         flyout_xml += '<MenuItem Label="---" /> \
                 <MenuItem Id="sg_console" \
                           Label="Console" \
@@ -552,20 +546,6 @@ sg_panel.Panel = new function() {
 
         // build the menu
         _cs_interface.setPanelFlyoutMenu(flyout_xml);
-    };
-
-    // Provides a way to make the panel persistent.
-    //
-    // Only valid for Photoshop.
-    const _make_persistent = function(persistent) {
-
-        var event_type = persistent ?
-            'com.adobe.PhotoshopPersistent' :
-            'com.adobe.PhotoshopUnPersistent';
-
-        var event = new CSEvent(event_type, "APPLICATION");
-        event.extensionId = _cs_interface.getExtensionID();
-        _cs_interface.dispatchEvent(event);
     };
 
     // Handles flyout menu clicks
@@ -732,7 +712,7 @@ sg_panel.Panel = new function() {
         const subject = encodeURIComponent("Adobe Integration Error");
         const body = encodeURIComponent(
             "Greetings Shotgun Support Team!\n\n" +
-            "We have some questions about the Photoshop CC Integration.\n\n" +
+            "We have some questions about the Animate CC Integration.\n\n" +
             "*** Please enter your questions here... ***\n\n"
         );
 
@@ -1153,7 +1133,7 @@ sg_panel.Panel = new function() {
 
         return encodeURIComponent(
             "Greetings Shotgun Support Team!\n\n" +
-            "We are experiencing some difficulties with the Photoshop CC Integration. " +
+            "We are experiencing some difficulties with the Animate CC Integration. " +
             "The details are included below.\n\n" +
             "Summary of the issue:\n\n" +
             "*** Please enter a summary of the issue here... ***\n\n" +

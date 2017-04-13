@@ -26,9 +26,9 @@ logger = sgtk.LogManager.get_logger(__name__)
 
 def bootstrap(engine_name, context, app_path, app_args, **kwargs):
     """
-    Prepares the environment for a tk-photoshopcc bootstrap.
+    Prepares the environment for a tk-animatecc bootstrap.
 
-    :param str engine_name: The name of the engine being used -- "tk-photoshopcc"
+    :param str engine_name: The name of the engine being used -- "tk-animatecc"
     :param context: The context to use when bootstrapping.
     :param str app_path: The path to the host application being launched.
     :param str app_args: The arguments to be passed to the host application
@@ -78,15 +78,15 @@ def _ensure_extension_up_to_date(context):
     :param context:  The context to use when bootstrapping.
     """
 
-    extension_name = "com.sg.basic.ps"
+    extension_name = "com.sg.basic.an"
 
     # the CEP install directory is OS-specific
     if sys.platform == "win32":
         app_data = os.getenv("APPDATA")
-    elif sys.platform == "darwin":
-        app_data = os.path.expanduser("~/Library/Application Support")
+    # elif sys.platform == "darwin":
+    #     app_data = os.path.expanduser("~/Library/Application Support")
     else:
-        raise Exception("This engine only runs on OSX & Windows.")
+        raise Exception("This engine only runs on Windows.")
 
     # the adobe CEP install directory. This is where the extension is stored.
     adobe_cep_dir = os.path.join(app_data, "Adobe", "CEP", "extensions")
