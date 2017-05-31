@@ -16,7 +16,7 @@ import os
 import traceback
 
 # NOTE: this module becomes available once the plugin is built
-from sgtk_plugin_basic_photoshopcc import manifest
+from sgtk_plugin_basic_animatecc import manifest
 
 # exit status codes used when the python process dies. these are known by the
 # js process that spawned python so they can be used as a primitive form of
@@ -99,7 +99,7 @@ def bootstrap(root_path, port, engine_name, app_id):
     os.environ["SHOTGUN_ADOBE_PORT"] = port
 
     # set the application id in the environment. This will allow the engine
-    # to know what host runtime it's in -- Photoshop, AE, etc.
+    # to know what host runtime it's in -- Animate, AE, etc.
     os.environ["SHOTGUN_ADOBE_APPID"] = app_id
 
     # do the toolkit bootstrapping. this will replace the core imported via the
@@ -118,7 +118,7 @@ def bootstrap(root_path, port, engine_name, app_id):
 
     from sgtk.platform.qt import QtGui
 
-    app_name = 'Shotgun Engine for Photoshop CC'
+    app_name = 'Shotgun Engine for Animate CC'
 
     # create and set up the Qt app. we don't want the app to close when the
     # last window is shut down since it's running in parallel to the CC product.

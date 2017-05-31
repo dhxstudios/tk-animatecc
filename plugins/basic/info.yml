@@ -13,14 +13,14 @@
 
 # ---- Plug-in information recommended values to specify by convention.
 
-name: "tk-photoshopcc-basic"
+name: "tk-animatecc-basic"
 version: "0.0.1"
 
-description: "Plugin to bootstrap the Shotgun Engine for Photoshop CC"
-author: "Shotgun Software"
-organization: "Autodesk Inc."
-contact: "support@shotgunsoftware.com"
-url: "https://www.shotgunsoftware.com"
+description: "Plugin to bootstrap the Shotgun Engine for Animate CC"
+author: "Danyul Carmichael"
+organization: "DHX Media"
+contact: "danyul.carmichael@dhxmedia.com"
+url: "https://www.dhxmedia.com"
 
 # ---- Values required by all plug-ins.
 
@@ -37,13 +37,14 @@ base_configuration:
   # the latest version available, simply omit the version token.
 
   # RELEASE : uncomment these. comment out the dev descriptor args below
-  #type: app_store
-  #name: tk-config-basic
-
-  # DEV: uncomment these. comment out the app store descriptor args above
   type: app_store
   name: tk-config-basic
-  version: v0.5.2
+  version: v1.0.20
+
+  # DEV: uncomment these. comment out the app store descriptor args above
+  # type: app_store
+  # name: tk-config-basic
+  # version: v0.5.2
 
 # The Plugin Id helps uniquely identify this plugin and can be used to override
 # and customize it. For more information, see:
@@ -52,8 +53,8 @@ base_configuration:
 # When the plugin is built, this file will be converted into a manifest.py file
 # and located in a python module named based on the plugin id in order to ensure
 # uniqueness.
-plugin_id: "basic.photoshopcc"
+plugin_id: "basic.animatecc"
 
 # ---- Values specific to this plug-in.
 
-debug_logging: false
+debug_logging: true

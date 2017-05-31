@@ -19,9 +19,9 @@ from contextlib import contextmanager
 import sgtk
 
 
-class PhotoshopCCEngine(sgtk.platform.Engine):
+class AnimateCCEngine(sgtk.platform.Engine):
     """
-    A Photoshop CC engine for Shotgun Toolkit.
+    An Animate CC engine for Shotgun Toolkit.
     """
 
     SHOTGUN_ADOBE_PORT = os.environ.get("SHOTGUN_ADOBE_PORT")
@@ -32,19 +32,19 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
     SHOTGUN_ADOBE_HEARTBEAT_INTERVAL = os.environ.get(
         "SHOTGUN_ADOBE_HEARTBEAT_INTERVAL",
         os.environ.get(
-            "SGTK_PHOTOSHOP_HEARTBEAT_INTERVAL",
+            "SGTK_ANIMATE_HEARTBEAT_INTERVAL",
             1.0,
         )
     )
     SHOTGUN_ADOBE_HEARTBEAT_TOLERANCE = os.environ.get(
         "SHOTGUN_ADOBE_HEARTBEAT_TOLERANCE",
         os.environ.get(
-            "SGTK_PHOTOSHOP_HEARTBEAT_TOLERANCE",
+            "SGTK_ANIMATE_HEARTBEAT_TOLERANCE",
             2,
         ),
     )
     SHOTGUN_ADOBE_NETWORK_DEBUG = (
-        "SGTK_PHOTOSHOP_NETWORK_DEBUG" in os.environ or
+        "SGTK_ANIMATE_NETWORK_DEBUG" in os.environ or
         "SHOTGUN_ADOBE_NETWORK_DEBUG" in os.environ
     )
 
@@ -69,7 +69,7 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
     _PROXY_WIN_HWND = None
     _HEARTBEAT_DISABLED = False
     _PROJECT_CONTEXT = None
-    _CONTEXT_CACHE_KEY = "photoshopcc_context_cache"
+    _CONTEXT_CACHE_KEY = "animatecc_context_cache"
 
     ############################################################################
     # context changing
@@ -114,8 +114,8 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
         # this in ExtendScript, because it's the parent process of any CEP and
         # Python processes that get spawned. By setting it at the top, it'll be
         # propagated down to any of Photoshop's subprocesses.
-        if "TANK_CONTEXT" in os.environ:
-            self.adobe.dollar.setenv("TANK_CONTEXT", new_context.serialize())
+        # if "TANK_CONTEXT" in os.environ:
+        #     self.adobe.dollar.setenv("TANK_CONTEXT", new_context.serialize())
 
     ############################################################################
     # engine initialization
@@ -127,7 +127,8 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
         """
 
         # import and keep a handle on the bundled python module
-        self.__tk_photoshopcc = self.import_module("tk_photoshopcc")
+        self.__tk_animatecc = self.import_module("tk_animatecc")
+        self.logger.debug(self.__tk_animatecc)
 
         # constant command uid lookups for these special commands
         self.__jump_to_sg_command_id = self.__get_command_uid()
@@ -135,7 +136,7 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
 
         # get the adobe instance. it may have been initialized already by a
         # previous instance of the engine. if not, initialize a new one.
-        self._adobe = self.__tk_photoshopcc.AdobeBridge.get_or_create(
+        self._adobe = self.__tk_animatecc.AdobeBridge.get_or_create(
             identifier=self.instance_name,
             port=self.SHOTGUN_ADOBE_PORT,
             logger=self.logger,
@@ -157,9 +158,9 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
         # in order to use frameworks, they have to be imported via
         # import_module. so they're exposed in the bundled python. keep a handle
         # on them for reuse.
-        self.__shotgun_data = self.__tk_photoshopcc.shotgunutils.shotgun_data
-        self.__shotgun_globals = self.__tk_photoshopcc.shotgunutils.shotgun_globals
-        self.__settings = self.__tk_photoshopcc.shotgunutils.settings
+        self.__shotgun_data = self.__tk_animatecc.shotgunutils.shotgun_data
+        self.__shotgun_globals = self.__tk_animatecc.shotgunutils.shotgun_globals
+        self.__settings = self.__tk_animatecc.shotgunutils.settings
 
         # import here since the engine is responsible for defining Qt.
         from sgtk.platform.qt import QtCore
@@ -257,9 +258,9 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
         Called when the engine should tear down itself and all its apps.
         """
         # Set our parent widget back to being owned by the window manager
-        # instead of Photoshop's application window.
+        # instead of Animate's application window.
         if self._PROXY_WIN_HWND and sys.platform == "win32":
-            self.__tk_photoshopcc.win_32_api.SetParent(self._PROXY_WIN_HWND, 0)
+            self.__tk_animatecc.win_32_api.SetParent(self._PROXY_WIN_HWND, 0)
 
         # No longer poll for new messages from this engine.
         if self._CHECK_CONNECTION_TIMER:
@@ -315,7 +316,7 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
         """
         properties = properties or dict()
         properties["uid"] = self.__get_command_uid()
-        return super(PhotoshopCCEngine, self).register_command(
+        return super(AnimateCCEngine, self).register_command(
             name,
             callback,
             properties,
@@ -408,7 +409,7 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
 
         # This will be True if the context_changes_disabled context manager is
         # used. We're just in a temporary state of not allowing context changes,
-        # which is useful when an app is doing a lot of Photoshop work that
+        # which is useful when an app is doing a lot of Animate work that
         # might be triggering active document changes that we don't want to
         # result in SGTK context changes.
         with self.heartbeat_disabled():
@@ -419,44 +420,55 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
                 return False
 
             if active_document_path:
+                active_document_path = self.adobe.sanitise_path(active_document_path)
                 self.logger.debug("New active document is %s" % active_document_path)
+
+                cached_context = self.__get_from_context_cache(active_document_path)
+
+                if cached_context:
+                    context = cached_context
+                    self.logger.debug("Document found in context cache: %r" % context)
+                else:
+                    try:
+                        context = sgtk.sgtk_from_path(active_document_path).context_from_path(
+                            active_document_path,
+                            previous_context=self.context,
+                        )
+                        self.__add_to_context_cache(active_document_path, context)
+                    except Exception:
+                        self.logger.debug(
+                            "Unable to determine context from path. Setting the Project context."
+                        )
+                        # clear the context finding task ids so that any tasks that
+                        # finish won't send data to js.
+                        self.__context_find_uid = None
+                        self.__context_thumb_uid = None
+
+                        # We go to the project context if this is a file outside of
+                        # SGTK control.
+                        if self._PROJECT_CONTEXT is None:
+                            self._PROJECT_CONTEXT = sgtk.Context(
+                                tk=self.context.sgtk,
+                                project=self.context.project,
+                            )
+
+                        context = self._PROJECT_CONTEXT
+
             else:
                 self.logger.debug(
                     "New active document check failed. This is likely due to the "
                     "new active document being in an unsaved state."
                 )
-                return False
 
-            cached_context = self.__get_from_context_cache(active_document_path)
-
-            if cached_context:
-                context = cached_context
-                self.logger.debug("Document found in context cache: %r" % context)
-            else:
-                try:
-                    context = sgtk.sgtk_from_path(active_document_path).context_from_path(
-                        active_document_path,
-                        previous_context=self.context,
+                # We go to the project context if this is a file outside of
+                # SGTK control.
+                if self._PROJECT_CONTEXT is None:
+                    self._PROJECT_CONTEXT = sgtk.Context(
+                        tk=self.context.sgtk,
+                        project=self.context.project,
                     )
-                    self.__add_to_context_cache(active_document_path, context)
-                except Exception:
-                    self.logger.debug(
-                        "Unable to determine context from path. Setting the Project context."
-                    )
-                    # clear the context finding task ids so that any tasks that
-                    # finish won't send data to js.
-                    self.__context_find_uid = None
-                    self.__context_thumb_uid = None
 
-                    # We go to the project context if this is a file outside of
-                    # SGTK control.
-                    if self._PROJECT_CONTEXT is None:
-                        self._PROJECT_CONTEXT = sgtk.Context(
-                            tk=self.context.sgtk,
-                            project=self.context.project,
-                        )
-
-                    context = self._PROJECT_CONTEXT
+                context = self._PROJECT_CONTEXT
 
             if not context.project:
                 self.logger.debug(
@@ -525,7 +537,7 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
 
     def _run_tests(self):
         """
-        Runs the test suite for the tk-photoshopcc bundle.
+        Runs the test suite for the tk-animatecc bundle.
         """
         # If we don't know what the tests root directory path is
         # via the environment, then we shouldn't be here.
@@ -712,14 +724,14 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
         QtGui.QMessageBox.question = _question_wrapper
         QtGui.QMessageBox.warning = _warning_wrapper
 
-    def _win32_get_photoshop_main_hwnd(self):
+    def _win32_get_animate_main_hwnd(self):
         """
-        Windows specific method to find the main Photoshop window
+        Windows specific method to find the main Animate window
         handle (HWND)
         """
         if not self._WIN32_PHOTOSHOP_MAIN_HWND:
-            found_hwnds = self.__tk_photoshopcc.win_32_api.find_windows(
-                class_name="Photoshop",
+            found_hwnds = self.__tk_animatecc.win_32_api.find_windows(
+                class_name="Animate",
                 stop_if_found=True,
             )
 
@@ -731,13 +743,13 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
     def _win32_get_proxy_window(self):
         """
         Windows-specific method to get the proxy window that will 'own' all
-        Toolkit dialogs.  This will be parented to the main photoshop
+        Toolkit dialogs.  This will be parented to the main animate
         application.
 
-        :returns: A QWidget that has been parented to Photoshop's window.
+        :returns: A QWidget that has been parented to Animate's window.
         """
-        # Get the main Photoshop window:
-        ps_hwnd = self._win32_get_photoshop_main_hwnd()
+        # Get the main Animate window:
+        ps_hwnd = self._win32_get_animate_main_hwnd()
         win32_proxy_win = None
 
         if ps_hwnd:
@@ -747,26 +759,26 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
             win32_proxy_win = QtGui.QWidget()
             win32_proxy_win.setWindowTitle('sgtk dialog owner proxy')
 
-            proxy_win_hwnd = self.__tk_photoshopcc.win_32_api.qwidget_winid_to_hwnd(
+            proxy_win_hwnd = self.__tk_animatecc.win_32_api.qwidget_winid_to_hwnd(
                 win32_proxy_win.winId(),
             )
 
             # Set the window style/flags. We don't need or want our Python
-            # dialogs to notify the Photoshop application window when they're
+            # dialogs to notify the Animate application window when they're
             # opened or closed, so we'll disable that behavior.
-            win_ex_style = self.__tk_photoshopcc.win_32_api.GetWindowLong(
+            win_ex_style = self.__tk_animatecc.win_32_api.GetWindowLong(
                 proxy_win_hwnd,
-                self.__tk_photoshopcc.win_32_api.GWL_EXSTYLE,
+                self.__tk_animatecc.win_32_api.GWL_EXSTYLE,
             )
 
-            self.__tk_photoshopcc.win_32_api.SetWindowLong(
+            self.__tk_animatecc.win_32_api.SetWindowLong(
                 proxy_win_hwnd,
-                self.__tk_photoshopcc.win_32_api.GWL_EXSTYLE, 
-                win_ex_style | self.__tk_photoshopcc.win_32_api.WS_EX_NOPARENTNOTIFY,
+                self.__tk_animatecc.win_32_api.GWL_EXSTYLE, 
+                win_ex_style | self.__tk_animatecc.win_32_api.WS_EX_NOPARENTNOTIFY,
             )
 
-            # Parent to the Photoshop application window.
-            self.__tk_photoshopcc.win_32_api.SetParent(proxy_win_hwnd, ps_hwnd)
+            # Parent to the Animate application window.
+            self.__tk_animatecc.win_32_api.SetParent(proxy_win_hwnd, ps_hwnd)
             self._PROXY_WIN_HWND = proxy_win_hwnd
 
         return win32_proxy_win
@@ -829,7 +841,7 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
 
         # Note - the base engine implementation will try to clean up
         # dialogs and widgets after they've been closed.  However this
-        # can cause a crash in Photoshop as the system may try to send
+        # can cause a crash in Animate as the system may try to send
         # an event after the dialog has been deleted.
         # Keeping track of all dialogs will ensure this doesn't happen
         self.__qt_dialogs.append(dialog)
@@ -838,7 +850,7 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
         self.__activate_python()
 
         # make sure the window raised so it doesn't
-        # appear behind the main Photoshop window
+        # appear behind the main Animate window
         self.logger.debug("Showing dialog: %s" % (title,))
         dialog.show()
         dialog.raise_()
@@ -879,7 +891,7 @@ class PhotoshopCCEngine(sgtk.platform.Engine):
 
         # Note - the base engine implementation will try to clean up
         # dialogs and widgets after they've been closed.  However this
-        # can cause a crash in Photoshop as the system may try to send
+        # can cause a crash in Animate as the system may try to send
         # an event after the dialog has been deleted.
         # Keeping track of all dialogs will ensure this doesn't happen
         self.__qt_dialogs.append(dialog)
